@@ -115,9 +115,9 @@ public:
 	virtual bool unk001() = 0;
 };
 
-// The head of INetworkMessageInternal's record since CS2 1.41.9.7. Verified there: m_pszName,
-// m_pfnAllocateMessage, m_szGroup, m_MessageId (int at 0x18) and m_GroupId (0x1c); the fields after
-// m_GroupId keep their earlier layout unverified.
+// The head of the INetworkMessageInternal record. m_pszName (0x00), m_pfnAllocateMessage (0x08),
+// m_szGroup (0x10), m_MessageId (0x18) and m_GroupId (0x1c) are verified by disassembly; the fields
+// after m_GroupId are not.
 struct NetMessageInfo_t
 {
 	const char *m_pszName;
@@ -168,12 +168,9 @@ public:
 
 	virtual void AssociateNetMessageWithChannelCategoryAbstract(INetworkMessageInternal *pNetMessage, NetworkCategoryId nCategoryId, bool) = 0;
 
-	// CS2 1.41.9.7 (build 26598758) removed one slot here and three among the old
-	// UnserializeFromStream .. GetNetMessageInfo slots (the ones that dispatched through the old
-	// serializer vtable), and added one after RegisterNetworkFieldChangeCallbackInternal. Slots matched
-	// by disassembly against 1.41.9.6: 0, 1, 4 (SerializeMessageInternal), 9 FindNetworkMessage,
-	// 10 FindNetworkMessagePartial, 11-15, 20, 22, 23, 27 FindNetworkMessageById, 32, and the
-	// destructor at 35/36. The names of 2, 3 and 5-8 are inferred from the old order, unverified.
+	// Slots verified by disassembly: 0, 1, 4 (SerializeMessageInternal), 9 (FindNetworkMessage),
+	// 10 (FindNetworkMessagePartial), 11-15, 20, 22, 23, 27 (FindNetworkMessageById), 32 and the
+	// destructor at 35/36. The names of 2, 3 and 5-8 follow the previous order and are unverified.
 	virtual INetworkMessageInternal *FindOrCreateNetMessage(int nMessageId, IProtobufBinding const *pProtoBinding, uint nMessageSize, INetworkSerializerBindingBuildFilter *pUnused, bool bCreateIfNotFound = true, bool bCannotBeNetworked = false) = 0;
 	virtual bool UnserializeMessageInternal( bf_read &pBuf, CNetMessage *pData ) = 0;
 	virtual bool SerializeMessageInternal( bf_write &pBuf, const CNetMessage *pData ) = 0;
@@ -208,8 +205,7 @@ public:
 	// Doesn't support duplicated callbacks per field
 	virtual void RegisterNetworkFieldChangeCallbackInternal(char const *szFieldName, uint64, NetworkFieldChangedDelegateType_t fieldType, CUtlAbstractDelegate pCallback, NetworkFieldChangeCallbackPerformType_t cbPerformType, int unkflag ) = 0;
 
-	// Added in CS2 1.41.9.7, unknown.
-	virtual void unk_1_41_9_7() = 0;
+	virtual void unk001() = 0;
 
 	virtual void AllowAdditionalMessageRegistration(bool bAllow) = 0;
 	virtual bool IsAdditionalMessageRegistrationAllowed() = 0;

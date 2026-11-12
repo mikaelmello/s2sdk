@@ -35,10 +35,9 @@ typedef int NetworkMessageId;
 typedef uint8 NetworkGroupId;
 typedef uint NetworkCategoryId;
 
-// CS2 1.41.9.7 (build 26598758) replaced the polymorphic message serializer with a plain record:
-// libnetworksystem has no INetworkMessageInternal/CNetworkSerializerPB vtable any more.
-// INetworkMessages::FindNetworkMessage* and CNetMessage::GetNetMessage() return a pointer to it,
-// and it starts with the NetMessageInfo_t fields, so the accessors below read it directly.
+// A plain record, not a polymorphic serializer: it has no vtable. INetworkMessages::FindNetworkMessage*
+// and CNetMessage::GetNetMessage() return a pointer to it, and it starts with the NetMessageInfo_t
+// fields, so the accessors below read it directly.
 class INetworkMessageInternal
 {
 public:
