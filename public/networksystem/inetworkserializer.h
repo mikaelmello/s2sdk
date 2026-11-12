@@ -35,26 +35,20 @@ typedef int NetworkMessageId;
 typedef uint8 NetworkGroupId;
 typedef uint NetworkCategoryId;
 
-abstract_class INetworkMessageInternal
+// CS2 1.41.9.7 (build 26598758) replaced the polymorphic message serializer with a plain record:
+// libnetworksystem has no INetworkMessageInternal/CNetworkSerializerPB vtable any more.
+// INetworkMessages::FindNetworkMessage* and CNetMessage::GetNetMessage() return a pointer to it,
+// and it starts with the NetMessageInfo_t fields, so the accessors below read it directly.
+class INetworkMessageInternal
 {
 public:
-	virtual ~INetworkMessageInternal() = 0;
+	// The registered debug name, e.g. "CMsgSosStartSoundEvent [208]".
+	const char *GetUnscopedName() { return m_pszName; }
+	NetMessageInfo_t *GetNetMessageInfo() { return reinterpret_cast<NetMessageInfo_t *>( this ); }
+	CNetMessage *AllocateMessage() { return m_pfnAllocateMessage(); }
 
-	virtual const char *GetUnscopedName() = 0;
-	virtual NetMessageInfo_t *GetNetMessageInfo() = 0;
-
-	virtual void SetMessageId( NetworkMessageId nMessageId ) = 0;
-
-	virtual void AddCategoryMask( int nMask, bool bRequireHandler ) = 0;
-
-	virtual void SwitchMode( NetworkValidationMode_t nMode ) = 0;
-
-	virtual CNetMessage *AllocateMessage() = 0;
-
-	// Calls to INetworkMessages::SerializeMessageInternal
-	virtual bool Serialize( bf_write &pBuf, const CNetMessage *pData ) = 0;
-	// Calls to INetworkMessages::UnserializeMessageInternal
-	virtual bool Unserialize( bf_read &pBuf, CNetMessage *pData ) = 0;
+	const char *m_pszName;
+	CNetMessage *( *m_pfnAllocateMessage )();
 };
 
 struct NetworkRecipientsFilter_t

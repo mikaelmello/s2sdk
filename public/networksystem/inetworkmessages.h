@@ -115,10 +115,13 @@ public:
 	virtual bool unk001() = 0;
 };
 
+// The head of INetworkMessageInternal's record since CS2 1.41.9.7. Verified there: m_pszName,
+// m_pfnAllocateMessage, m_szGroup, m_MessageId (int at 0x18) and m_GroupId (0x1c); the fields after
+// m_GroupId keep their earlier layout unverified.
 struct NetMessageInfo_t
 {
-	int m_nCategories;
-	IProtobufBinding *m_pBinding;
+	const char *m_pszName;
+	CNetMessage *( *m_pfnAllocateMessage )();
 	CUtlString m_szGroup;
 	NetworkMessageId m_MessageId;
 	NetworkGroupId m_GroupId;
@@ -165,23 +168,18 @@ public:
 
 	virtual void AssociateNetMessageWithChannelCategoryAbstract(INetworkMessageInternal *pNetMessage, NetworkCategoryId nCategoryId, bool) = 0;
 
-	// Passing nMessasgeId as -1 would auto-assign the id based on the message name hash.
-	// AMNOTE: bCannotBeNetworked marks the message as never sent over the network, Serialize rejects it,
-	// and its id is auto-assigned too
+	// CS2 1.41.9.7 (build 26598758) removed one slot here and three among the old
+	// UnserializeFromStream .. GetNetMessageInfo slots (the ones that dispatched through the old
+	// serializer vtable), and added one after RegisterNetworkFieldChangeCallbackInternal. Slots matched
+	// by disassembly against 1.41.9.6: 0, 1, 4 (SerializeMessageInternal), 9 FindNetworkMessage,
+	// 10 FindNetworkMessagePartial, 11-15, 20, 22, 23, 27 FindNetworkMessageById, 32, and the
+	// destructor at 35/36. The names of 2, 3 and 5-8 are inferred from the old order, unverified.
 	virtual INetworkMessageInternal *FindOrCreateNetMessage(int nMessageId, IProtobufBinding const *pProtoBinding, uint nMessageSize, INetworkSerializerBindingBuildFilter *pUnused, bool bCreateIfNotFound = true, bool bCannotBeNetworked = false) = 0;
-
-	virtual bool Serialize(bf_write &pBuf, const CNetMessage *pData) = 0;
-
 	virtual bool UnserializeMessageInternal( bf_read &pBuf, CNetMessage *pData ) = 0;
 	virtual bool SerializeMessageInternal( bf_write &pBuf, const CNetMessage *pData ) = 0;
 
 	// Returns nullptr if failed to unserialize, reason is written to err_reason
 	virtual CNetMessage *UnserializeFromStream(bf_read &pBuf, CUtlString &err_reason) = 0;
-	virtual bool SerializeAbstract(bf_write &pBuf, INetworkMessageInternal *pNetMessage, const CNetMessage *pData) = 0;
-
-	virtual CNetMessage *AllocateAndCopyConstructNetMessageAbstract(INetworkMessageInternal *pNetMessage, const CNetMessage *pFrom) = 0;
-
-	virtual void DeallocateNetMessageAbstract(INetworkMessageInternal *pNetMessage, CNetMessage *pData) = 0;
 
 	virtual void *RegisterNetworkFieldSerializer(char const *, NetworkSerializationMode_t, NetworkableDataType_t, int, NetworkFieldSerializeCB, NetworkFieldUnserializeCB, NetworkFieldInfoCB, 
 		NetworkFieldMetaInfoCB, NetworkableDataCB, NetworkUnkCB001, NetworkFieldSerializeCB, NetworkFieldUnserializeCB) = 0;
@@ -209,6 +207,9 @@ public:
 
 	// Doesn't support duplicated callbacks per field
 	virtual void RegisterNetworkFieldChangeCallbackInternal(char const *szFieldName, uint64, NetworkFieldChangedDelegateType_t fieldType, CUtlAbstractDelegate pCallback, NetworkFieldChangeCallbackPerformType_t cbPerformType, int unkflag ) = 0;
+
+	// Added in CS2 1.41.9.7, unknown.
+	virtual void unk_1_41_9_7() = 0;
 
 	virtual void AllowAdditionalMessageRegistration(bool bAllow) = 0;
 	virtual bool IsAdditionalMessageRegistrationAllowed() = 0;
